@@ -14,7 +14,9 @@ while(<DATA>) {
     puthash ($line);
 }
 
-%lineHash;
+my %lineHash = ();
 sub puthash {
-    print "@_";
+    $lineHash{"$@_"} = "@_";
+    print $lineHash{"$@_"};
 }
+
