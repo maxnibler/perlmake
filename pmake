@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+# Maximillian Nibler mnibler@ucsc.edu
+
+use strict;
+use warnings;
+
+printf "Makefile \n";
+
+open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
+
+while(<DATA>) {
+    my $parse = "$_";
+    my $line = $parse =~ m/#/? "$`" : "$parse";
+    puthash ($line);
+}
+
+%lineHash;
+sub puthash {
+    print "@_";
+}
