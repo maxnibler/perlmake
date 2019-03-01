@@ -6,28 +6,31 @@ use warnings;
 
 my %lineHash = ();
 my @recArray = ();
-
-open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
-
 #read in the Makefile
+open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
 while(<DATA>) {
     my $parse = "$_";
     my $line = $parse =~ m/#/? "$`" : "$parse";
     puthash ($line);
 }
-sub extMacro{
-
+sub extMacro {
+    my $inpLine;
+    $inpLine = "@_";
+    my $mac = $inpLine =~ m/:/? "$`" : "error extract macro \n";
+    storeTargets ("$'");
+    return $mac;
 }
 sub storeTargets{
-
+    print "target: (@_)";
 }
 sub storeRecipe{
-
+    
 }
 #store
 sub puthash {
     $lineHash{"$@_"} = "@_";
-    my $printl = $lineHash{"$@_"} =~ /^(\S+)\s*:\s*(.*?)\s*$/? "@_" : "0\n";
+    my $printl = $lineHash{"$@_"} =~ /^(\S+)\s*:\s*(.*?)\s*$/? extMacro ("@_") : "0\n";
+    
     print "$printl";
 }
 
