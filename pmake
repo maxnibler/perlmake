@@ -4,19 +4,30 @@
 use strict;
 use warnings;
 
-printf "Makefile \n";
+my %lineHash = ();
+my @recArray = ();
 
 open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
 
+#read in the Makefile
 while(<DATA>) {
     my $parse = "$_";
     my $line = $parse =~ m/#/? "$`" : "$parse";
     puthash ($line);
 }
-# just testing git
-my %lineHash = ();
+sub extMacro{
+
+}
+sub storeTargets{
+
+}
+sub storeRecipe{
+
+}
+#store
 sub puthash {
     $lineHash{"$@_"} = "@_";
-    print $lineHash{"$@_"};
+    my $printl = $lineHash{"$@_"} =~ /^(\S+)\s*:\s*(.*?)\s*$/? "@_" : "0\n";
+    print "$printl";
 }
 
