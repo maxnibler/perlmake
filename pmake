@@ -59,14 +59,16 @@ sub parseLine {
         resetCount();
         $key = extMacro ("@_");
         extTargets ("@_"); 
-    } elsif ($nxtLine =~ /^\s+$/){
-        print "blank Line\n";
+    } elsif ($nxtLine =~ /^\s*$/){
+        
     } else {
         addToList("@_");
-        print "djd , @_ \n";
     }
     #print "$key\n";
 }
+#my $time;
+#$time = $lineHash{"%"}{"rec"}{1};
+#print "$time"; 
 my %strsignal = (
     1 => "Hangup",
     2 => "Interrupt",
