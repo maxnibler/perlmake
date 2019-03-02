@@ -5,7 +5,17 @@ use strict;
 use warnings;
 
 my %lineHash = ();
-my @recArray = ();
+my %listNodes;
+sub makeList{
+    my %listStruct;
+    $listStruct{head} = "@_";
+    #print "$listStruct{head}";
+    return %listStruct;
+}
+
+%listNode = makeList("testing");
+$listNode{node} = "huh";
+print "$listNode{head} $listNode{node}";
 #read in the Makefile
 open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
 while(<DATA>) {
@@ -21,16 +31,54 @@ sub extMacro {
     return $mac;
 }
 sub storeTargets{
-    print "target: (@_)";
+    my $tarLine;
+    my %listHead;
+    $tarLine = "@_";
+    $tarLine =~ tr/ \n//ds;
+    print "$tarLine\n";
+    %listHead = makeList("$tarLine");
+    return %listHead;
 }
 sub storeRecipe{
-    
+    my $recipeLine;
+    $recipeLine = "@_";
+    $recipeLine =~ tr/ \n//ds;
+    return $recipeLine;
 }
 #store
 sub puthash {
     $lineHash{"$@_"} = "@_";
-    my $printl = $lineHash{"$@_"} =~ /^(\S+)\s*:\s*(.*?)\s*$/? extMacro ("@_") : "0\n";
+    my $key = $lineHash{"$@_"} =~ /^(\S+)\s*:\s*(.*?)\s*$/? extMacro ("@_") : storeRecipe("@_");
     
-    print "$printl";
+    print "$key\n";
 }
-
+my %strsignal = (
+    1 => "Hangup",
+    2 => "Interrupt",
+    3 => "Quit",
+    4 => "Illegal instruction",
+    5 => "Trace/breakpoint trap",
+    6 => "Aborted",
+    7 => "Bus error",
+    8 => "Floating point exception",
+    9 => "Killed",
+   11 => "Segmentation fault",
+   13 => "Broken pipe",
+   14 => "Alarm clock",
+   15 => "Terminated",
+   16 => "Stack fault",
+   17 => "Child exited",
+   18 => "Continued",
+   19 => "Stopped (signal)",
+   20 => "Stopped",
+   21 => "Stopped (tty input)",
+   22 => "Stopped (tty output)",
+   24 => "CPU time limit exceeded",
+   25 => "File size limit exceeded",
+   26 => "Virtual timer expired",
+   27 => "Profiling timer expired",
+   28 => "Window changed",
+   29 => "I/O possible",
+   30 => "Power failure",
+   31 => "Bad system call",
+);
