@@ -4,40 +4,47 @@
 use strict;
 use warnings;
 
-my %lineHash = ();
-my %listNodes;
-sub makeList{
+my %lineHash;
+my $countT;
+my $countR;
+my $key;
+
+sub resetCount{
+    $countT = 0;
+    $countR = 0;
+}
+sub addToList{
     my %listStruct;
-    $listStruct{head} = "@_";
-    #print "$listStruct{head}";
-    return %listStruct;
+    my $addLine = "@_";
+    $addLine = storeRecipe ("$addLine");
+    $lineHash{"$key"}{"rec"}{"$countR"} = "$addLine";
+    $countR ++;
+    #print "$listStruct{head}"
+    #return %listHead;
 }
 
-%listNode = makeList("testing");
-$listNode{node} = "huh";
-print "$listNode{head} $listNode{node}";
 #read in the Makefile
+resetCount();
 open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
 while(<DATA>) {
     my $parse = "$_";
     my $line = $parse =~ m/#/? "$`" : "$parse";
-    puthash ($line);
+    parseLine ($line);
 }
 sub extMacro {
     my $inpLine;
     $inpLine = "@_";
     my $mac = $inpLine =~ m/:/? "$`" : "error extract macro \n";
-    storeTargets ("$'");
     return $mac;
 }
-sub storeTargets{
+sub extTargets{
     my $tarLine;
-    my %listHead;
-    $tarLine = "@_";
+    my $inpline = "@_";
+    $tarLine = $inpline =~ m/:/? "$'" : "error";
     $tarLine =~ tr/ \n//ds;
-    print "$tarLine\n";
-    %listHead = makeList("$tarLine");
-    return %listHead;
+    #print "$tarLine\n";
+    $lineHash{"$key"}{"tar"}{"$countT"} = "$tarLine";
+    $countT ++;
 }
 sub storeRecipe{
     my $recipeLine;
@@ -46,11 +53,19 @@ sub storeRecipe{
     return $recipeLine;
 }
 #store
-sub puthash {
-    $lineHash{"$@_"} = "@_";
-    my $key = $lineHash{"$@_"} =~ /^(\S+)\s*:\s*(.*?)\s*$/? extMacro ("@_") : storeRecipe("@_");
-    
-    print "$key\n";
+sub parseLine {
+    my $nxtLine = "@_";
+    if ($nxtLine =~ /^(\S+)\s*:\s*(.*?)\s*$/) {
+        resetCount();
+        $key = extMacro ("@_");
+        extTargets ("@_"); 
+    } elsif ($nxtLine =~ /^\s+$/){
+        print "blank Line\n";
+    } else {
+        addToList("@_");
+        print "djd , @_ \n";
+    }
+    #print "$key\n";
 }
 my %strsignal = (
     1 => "Hangup",
