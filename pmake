@@ -9,6 +9,38 @@ my $countT;
 my $countR;
 my $key;
 
+#read in the Makefile
+resetCount();
+open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
+#print "$ARGV[0]";
+while(<DATA>) {
+    my $parse = "$_";
+    my $line = $parse =~ m/#/? "$`" : "$parse";
+    parseLine ($line);
+}
+#system( "$ARGV[0]" );
+my $i = 0;
+my $temp = "$ARGV[$i]";
+while ($ARGV[$i]){
+    #print "looped";
+    $temp = "$ARGV[$i]";
+    bashLoop("$temp");
+    $i ++;
+}
+sub bashLoop {
+    my $callky;
+    #print "@_";
+    $callky = "@_";
+    resetCount();
+    my $bashout;
+    $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
+    while ($bashout){
+        #system ( "$bashout" );
+        print "$bashout\n";
+        $countT ++;
+        $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
+    }
+}
 sub resetCount{
     $countT = 0;
     $countR = 0;
@@ -19,17 +51,8 @@ sub addToList{
     $addLine = storeRecipe ("$addLine");
     $lineHash{"$key"}{"rec"}{"$countR"} = "$addLine";
     $countR ++;
-    #print "$listStruct{head}"
-    #return %listHead;
-}
-
-#read in the Makefile
-resetCount();
-open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
-while(<DATA>) {
-    my $parse = "$_";
-    my $line = $parse =~ m/#/? "$`" : "$parse";
-    parseLine ($line);
+    #print "$listStruct{head}";
+    #return %listHead; 
 }
 sub extMacro {
     my $inpLine;
@@ -41,7 +64,7 @@ sub extTargets{
     my $tarLine;
     my $inpline = "@_";
     $tarLine = $inpline =~ m/:/? "$'" : "error";
-    $tarLine =~ tr/ \n//ds;
+    $tarLine =~ tr/$//ds;
     #print "$tarLine\n";
     $lineHash{"$key"}{"tar"}{"$countT"} = "$tarLine";
     $countT ++;
