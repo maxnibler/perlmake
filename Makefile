@@ -1,8 +1,12 @@
-# $Id: Makefile,v 1.2 2018-11-06 18:05:32-08 - - $                                                                                    
+# $Id: Makefile,v 1.3 2018-09-28 15:41:48-07 - - $                                                                                    
 
-%: %.c
-        cid + $<
-        g++ $< -o $@
+# Note: "echo all" is echoed, but echo of "foo" and "bar" are not.                                                                    
 
-%.test:
-        $*
+all : foo bar
+        echo all - command '*IS*' echoed
+
+foo :
+        @ echo foo - command not echoed
+
+bar :
+        @ echo bar - command not echoed

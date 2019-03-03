@@ -16,16 +16,26 @@ open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
 while(<DATA>) {
     my $parse = "$_";
     my $line = $parse =~ m/#/? "$`" : "$parse";
+    print "$line";
     parseLine ($line);
 }
 #system( "$ARGV[0]" );
 my $i = 0;
-my $temp = "$ARGV[$i]";
+my $temp;
 while ($ARGV[$i]){
     #print "looped";
     $temp = "$ARGV[$i]";
     bashLoop("$temp");
     $i ++;
+}
+my @keyArr;
+if ($i == 0){
+    @keyArr = keys %lineHash;
+    while ($keyArr[$i]){
+        $key = $keyArr[$i];
+        bashLoop("$key");
+        $i ++;
+    }
 }
 sub bashLoop {
     my $callky;
@@ -35,8 +45,8 @@ sub bashLoop {
     my $bashout;
     $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
     while ($bashout){
-        #system ( "$bashout" );
-        print "$bashout\n";
+        system ( "$bashout" );
+        #print "$bashout\n";
         $countT ++;
         $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
     }
@@ -46,7 +56,6 @@ sub resetCount{
     $countR = 0;
 }
 sub addToList{
-    my %listStruct;
     my $addLine = "@_";
     $addLine = storeRecipe ("$addLine");
     $lineHash{"$key"}{"rec"}{"$countR"} = "$addLine";
@@ -58,6 +67,7 @@ sub extMacro {
     my $inpLine;
     $inpLine = "@_";
     my $mac = $inpLine =~ m/:/? "$`" : "error extract macro \n";
+    $mac =~ s/^\s+|\s+$//g;
     return $mac;
 }
 sub extTargets{
@@ -72,7 +82,7 @@ sub extTargets{
 sub storeRecipe{
     my $recipeLine;
     $recipeLine = "@_";
-    $recipeLine =~ tr/ \n//ds;
+    $recipeLine =~ s/^\s+|\s+$//g;
     return $recipeLine;
 }
 #store
