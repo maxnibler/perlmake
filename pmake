@@ -37,6 +37,13 @@ if ($i == 0){
         $i ++;
     }
 }
+sub parseAt{
+    $temp = "@_";
+    $temp =~ m/@/;
+    $temp = "$'";
+    $temp =~ s/^\s+|\s+$//g;
+    system ( "$temp" );
+}
 sub bashLoop {
     my $callky;
     #print "@_";
@@ -45,7 +52,12 @@ sub bashLoop {
     my $bashout;
     $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
     while ($bashout){
-        system ( "$bashout" );
+        if ($bashout =~ /^@\s\S+/){
+            parseAt ( "$bashout" );
+        }else {
+            print ("$bashout\n");
+            system ( "$bashout" );
+        }
         #print "$bashout\n";
         $countT ++;
         $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
