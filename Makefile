@@ -1,12 +1,11 @@
-# $Id: Makefile,v 1.3 2018-09-28 15:41:48-07 - - $                                                                                    
+# $Id: Makefile,v 1.1 2011-03-24 17:25:20-07 - - $
 
-# Note: "echo all" is echoed, but echo of "foo" and "bar" are not.                                                                    
+hello : hello.c
+	gcc hello.c -o hello
 
-all : foo bar
-        echo all - command '*IS*' echoed
+bad : bad.c
+	gcc bad.c -o bad
 
-foo :
-        @ echo foo - command not echoed
+ci : Makefile hello.c bad.c
+	cid Makefile hello.c bad.c
 
-bar :
-        @ echo bar - command not echoed

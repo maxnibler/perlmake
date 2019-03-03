@@ -8,6 +8,7 @@ my %lineHash;
 my $countT;
 my $countR;
 my $key;
+my @keyArr;
 
 #read in the Makefile
 resetCount();
@@ -28,21 +29,59 @@ while ($ARGV[$i]){
     bashLoop("$temp");
     $i ++;
 }
-my @keyArr;
 if ($i == 0){
-    @keyArr = keys %lineHash;
-    while ($keyArr[$i]){
-        $key = $keyArr[$i];
-        bashLoop("$key");
-        $i ++;
+    $key = $keyArr[0];
+    bashLoop("$key");
+}
+sub fileTime {
+    my @filestat = stat "@_";
+    if (@filestat) {
+        #print "@_ ";
+        my $mtime = $filestat[9];
+        #print "$mtime ";
+        return $mtime;
     }
+    #print "no file";
+    return 0;
 }
 sub parseAt{
     $temp = "@_";
     $temp =~ m/@/;
     $temp = "$'";
     $temp =~ s/^\s+|\s+$//g;
-    system ( "$temp" );
+    sysfun ( "$temp" );
+}
+sub parseGCC {
+    my $targ;
+    my $deps;
+    my $depname;
+    my @splitLine;
+    @splitLine = split ( / / , "@_" );
+    $targ = "$lineHash{$key}{tar}{0}";
+    $targ = fileTime ("$targ");
+    $depname = $splitLine[-1];
+    $deps = fileTime ("$depname");
+    if ( $deps < $targ ){
+        print "@_";
+        sysfun ("@_");
+    }else {
+        print "pmake: '$depname' is up to date.\n";
+    }
+}
+sub sysfun {
+    my $sysret;
+    system(@_);
+    if ($? == -1) {
+	print "failed to execute: $!\n";
+    }
+    elsif ($? & 127) {
+    printf "child died with signal %d, %s coredump\n",
+    ($? & 127),  ($? & 128) ? 'with' : 'without';
+    }
+    else {
+	printf "child exited with value %d\n", $? >> 8;
+    }
+    #print "\nwhat it this : $sysret\n": 0;
 }
 sub bashLoop {
     my $callky;
@@ -54,9 +93,11 @@ sub bashLoop {
     while ($bashout){
         if ($bashout =~ /^@\s\S+/){
             parseAt ( "$bashout" );
+        }elsif ($bashout =~ /^gcc\s\S+/){
+            parseGCC ( "$bashout" );
         }else {
             print ("$bashout\n");
-            system ( "$bashout" );
+            sysfun ( "$bashout" );
         }
         #print "$bashout\n";
         $countT ++;
@@ -86,7 +127,7 @@ sub extTargets{
     my $tarLine;
     my $inpline = "@_";
     $tarLine = $inpline =~ m/:/? "$'" : "error";
-    $tarLine =~ tr/$//ds;
+    $tarLine =~ s/^\s+|\s+$//g;
     #print "$tarLine\n";
     $lineHash{"$key"}{"tar"}{"$countT"} = "$tarLine";
     $countT ++;
@@ -103,6 +144,8 @@ sub parseLine {
     if ($nxtLine =~ /^(\S+)\s*:\s*(.*?)\s*$/) {
         resetCount();
         $key = extMacro ("@_");
+        my $KAsize = $#keyArr + 1;
+        $keyArr[$KAsize] = "$key";
         extTargets ("@_"); 
     } elsif ($nxtLine =~ /^\s*$/){
         
@@ -132,7 +175,7 @@ my %strsignal = (
    17 => "Child exited",
    18 => "Continued",
    19 => "Stopped (signal)",
-   20 => "Stopped",
+   20 => "Stopped", 
    21 => "Stopped (tty input)",
    22 => "Stopped (tty output)",
    24 => "CPU time limit exceeded",
