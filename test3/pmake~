@@ -254,6 +254,7 @@ sub parseLine {
         extTargets ("@_");
     } elsif ($nxtLine =~ m/=/){
 	print "gotche\n";
+    } 
     } elsif ($nxtLine =~ /^\s*$/){
     
     } else {

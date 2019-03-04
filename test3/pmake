@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 my %lineHash;
+my %depsHash;
 our $count;
 our $countT;
 my $countR;
@@ -201,6 +202,24 @@ sub bashLoop {
 	0;
     }
 }
+sub replaceDeps {
+    local $deps = "@_";
+    local $temp;
+    if ($deps =~ /(\D){(\S+)}/){
+        $depname = "$&";
+        $temp = $depname;
+        $temp =~ s/}//g;
+        $temp =~ s/{//g;
+        $temp =~ s/\D//;
+        print "$depname the temp\n";
+        $temp = $depsHash{"$temp"};
+        print "$deps : '$temp' '$depname'\n";
+        $deps =~ s/\Q$depname/$temp/g;
+        print "$deps\n";
+        return replaceDeps ("$deps");
+    }
+    return $deps;
+}
 sub resetCount{
     $countT = 0;
     $countR = 0;
@@ -244,7 +263,7 @@ sub storeRecipe{
 }
 #store
 sub parseLine {
-    print "this is the correct function right>";
+    #print "this is the correct function right>";
     my $nxtLine = "@_";
     if ($nxtLine =~ /^(\S+)\s*:\s*(.*?)\s*$/) {
         resetCount();
@@ -253,7 +272,12 @@ sub parseLine {
         $keyArr[$KAsize] = "$key";
         extTargets ("@_");
     } elsif ($nxtLine =~ m/=/){
-	print "gotche\n";
+        local $deps = "$`";
+        local $targ = "$'";
+        $deps =~ s/^\s+|\s+$//g;
+        $targ =~ s/^\s+|\s+$//g;
+        #print "$targ $deps\n";
+        $depsHash{$deps} = "$targ";
     } elsif ($nxtLine =~ /^\s*$/){
     
     } else {
