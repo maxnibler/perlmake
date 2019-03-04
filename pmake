@@ -5,6 +5,8 @@ use strict;
 use warnings;
 
 my %lineHash;
+my %depsHash;
+my %wildHash;
 our $count;
 our $countT;
 my $countR;
@@ -28,6 +30,7 @@ while(<DATA>) {
     #print "$line";
     parseLine ($line);
 }
+wildCard();
 #system( "$ARGV[0]" );
 our $i = 0;
 our $temp;
@@ -45,6 +48,40 @@ if ($i == 0){
     #print "this is the source";
     if (callMacro("$key")){
         print "pmake: '$key' is up to date.\n"
+    }
+}
+sub wildCard {
+    local $count = 0;
+    local $targ;
+    local $macs = $keyArr[$count];
+    while ($macs){
+	$count ++;
+	if ($macs =~ /%/){
+	    $targ = "$'";
+	    $macs = $keyArr[$count];
+	    $count++;
+	}
+	if ($targ){
+	    $macs =~ m/\Q$targ/? wildParse("$macs", '%'."$targ") : 0;
+	}
+        $macs = $keyArr[$count];
+    }
+}
+sub wildParse {
+    local @splitLine = split ( / /, "@_");
+    #print "$splitLine[1] $splitLine[0] :";
+    local $count = 0;
+    local $targ = $splitLine[0] =~ m/\Q./? "$`" : 0;
+    local $deps = $lineHash{"$splitLine[1]"}{"tar"}{0};
+    $deps =~ s/%/$targ/;
+    #print " $targ $deps\n";
+    local $macs = $lineHash{$splitLine[1]}{"rec"}{$count};
+    while ($macs){
+        $macs =~ s/\$(<)/$deps/g;
+	#print "$macs ++++\n";
+        $lineHash{$splitLine[0]}{"rec"}{$count} = "$macs";
+        $count++;
+        $macs = $lineHash{$splitLine[1]}{"rec"}{$count};
     }
 }
 sub callMacro{
@@ -201,6 +238,24 @@ sub bashLoop {
 	0;
     }
 }
+sub replaceDeps {
+    local $deps = "@_";
+    local $temp;
+    if ($deps =~ /(\D){(\S+)}/){
+        $depname = "$&";
+        $temp = $depname;
+        $temp =~ s/}//g;
+        $temp =~ s/{//g;
+        $temp =~ s/\D//;
+        #print "$depname the temp\n";
+        $temp = $depsHash{"$temp"};
+        #print "$deps : '$temp' '$depname'\n";
+        $deps =~ s/\Q$depname/$temp/g;
+        #print "$deps\n";
+        return replaceDeps ("$deps");
+    }
+    return $deps;
+}
 sub resetCount{
     $countT = 0;
     $countR = 0;
@@ -208,6 +263,7 @@ sub resetCount{
 sub addToList{
     my $addLine = "@_";
     $addLine = storeRecipe ("$addLine");
+    $addLine = replaceDeps ("$addLine");
     $lineHash{"$key"}{"rec"}{"$countR"} = "$addLine";
     $countR ++;
     #print "$listStruct{head}";
@@ -226,6 +282,7 @@ sub extTargets{
     my $inpline = "@_";
     $tarLine = $inpline =~ m/:/? "$'" : "error";
     $tarLine =~ s/^\s+|\s+$//g;
+    $tarLine = replaceDeps ("$tarLine");
     local @splitLine = split ( / / , $tarLine );
     $tarLine = $splitLine[$countT];
     while ($tarLine){
@@ -244,16 +301,22 @@ sub storeRecipe{
 }
 #store
 sub parseLine {
-    print "this is the correct function right>";
+    #print "this is the correct function right>";
     my $nxtLine = "@_";
     if ($nxtLine =~ /^(\S+)\s*:\s*(.*?)\s*$/) {
         resetCount();
         $key = extMacro ("@_");
+        $key = replaceDeps("$key");
         my $KAsize = $#keyArr + 1;
         $keyArr[$KAsize] = "$key";
         extTargets ("@_");
     } elsif ($nxtLine =~ m/=/){
-	print "gotche\n";
+        local $deps = "$`";
+        local $targ = "$'";
+        $deps =~ s/^\s+|\s+$//g;
+        $targ =~ s/^\s+|\s+$//g;
+        #print "$targ $deps\n";
+        $depsHash{$deps} = "$targ";
     } elsif ($nxtLine =~ /^\s*$/){
     
     } else {

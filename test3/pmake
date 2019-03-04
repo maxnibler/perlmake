@@ -211,11 +211,11 @@ sub replaceDeps {
         $temp =~ s/}//g;
         $temp =~ s/{//g;
         $temp =~ s/\D//;
-        print "$depname the temp\n";
+        #print "$depname the temp\n";
         $temp = $depsHash{"$temp"};
-        print "$deps : '$temp' '$depname'\n";
+        #print "$deps : '$temp' '$depname'\n";
         $deps =~ s/\Q$depname/$temp/g;
-        print "$deps\n";
+        #print "$deps\n";
         return replaceDeps ("$deps");
     }
     return $deps;
@@ -227,6 +227,7 @@ sub resetCount{
 sub addToList{
     my $addLine = "@_";
     $addLine = storeRecipe ("$addLine");
+    $addLine = replaceDeps ("$addLine");
     $lineHash{"$key"}{"rec"}{"$countR"} = "$addLine";
     $countR ++;
     #print "$listStruct{head}";
@@ -245,6 +246,7 @@ sub extTargets{
     my $inpline = "@_";
     $tarLine = $inpline =~ m/:/? "$'" : "error";
     $tarLine =~ s/^\s+|\s+$//g;
+    $tarLine = replaceDeps ("$tarLine");
     local @splitLine = split ( / / , $tarLine );
     $tarLine = $splitLine[$countT];
     while ($tarLine){
@@ -268,6 +270,7 @@ sub parseLine {
     if ($nxtLine =~ /^(\S+)\s*:\s*(.*?)\s*$/) {
         resetCount();
         $key = extMacro ("@_");
+        $key = replaceDeps("$key");
         my $KAsize = $#keyArr + 1;
         $keyArr[$KAsize] = "$key";
         extTargets ("@_");

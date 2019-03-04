@@ -1,25 +1,33 @@
-# $Id: Makefile,v 1.1 2011-03-24 17:24:59-07 - - $
+# $Id: Makefile,v 1.2 2015-11-03 13:44:07-08 - - $
 
-all : hello
+MKFILE   = Makefile
+CCOPTS   = -g -O0 -Wall -Wextra
+SOURCES  = main.c hello.c
+HEADERS  = hello.h
+OBJECTS  = main.o hello.o
+CHECKIN  = ${MKFILE} ${SOURCES} ${HEADERS}
+EXECBIN  = hello
 
-hello : main.o hello.o
-	gcc main.o hello.o -o hello
+all : ${EXECBIN}
 
-main.o : main.c hello.h
-	gcc -c main.c
+${EXECBIN} : ${OBJECTS}
+	cc ${CCOPTS} ${OBJECTS} -o ${EXECBIN}
 
-hello.o : hello.c hello.h
-	gcc -c hello.c
+%.o : %.c
+	cc ${CCOPTS} -c $<
 
-ci : Makefile main.c hello.c hello.h
-	cid Makefile main.c hello.c hello.h
+ci : ${CHECKIN}
+	cid + ${CHECKIN}
 
-test : hello
-	./hello
+test : ${EXECBIN}
+	./${EXECBIN} ; echo status = $$?
 
 clean : 
-	- rm hello.o main.o
+	- rm ${OBJECTS}
 
 spotless : clean
-	- rm hello
+	- rm ${EXECBIN}
+
+hello.o: hello.c hello.h
+main.o: main.c hello.h
 
