@@ -1,9 +1,8 @@
-/* $Id: hello.c,v 1.1 2011-03-24 17:25:20-07 - - $ */
+/* $Id: hello.c,v 1.1 2011-03-24 17:24:59-07 - - $ */
 
-#include <stdio.h>
+#include "hello.h"
 
-int main (void) {
-   printf ("Hello, world\n");
-   return 0;
+void hello (void) {
+   printf ("Hello, world.\n");
 }
 

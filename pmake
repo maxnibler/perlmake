@@ -17,7 +17,7 @@ open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
 while(<DATA>) {
     my $parse = "$_";
     my $line = $parse =~ m/#/? "$`" : "$parse";
-    print "$line";
+    #print "$line";
     parseLine ($line);
 }
 #system( "$ARGV[0]" );
@@ -31,7 +31,9 @@ while ($ARGV[$i]){
 }
 if ($i == 0){
     $key = $keyArr[0];
-    bashLoop("$key");
+    if (bashLoop("$key")){
+        print "pmake: '$key' is up to date.\n"
+    }
 }
 sub fileTime {
     my @filestat = stat "@_";
@@ -62,46 +64,57 @@ sub parseGCC {
     $depname = $splitLine[-1];
     $deps = fileTime ("$depname");
     if ( $deps < $targ ){
-        print "@_";
+        print "@_\n";
         sysfun ("@_");
+        return 0;
     }else {
-        print "pmake: '$depname' is up to date.\n";
+        #print "$deps $targ @_\n";
+        #print "pmake: '$depname' is up to date.\n";
+        return 1;
     }
 }
 sub sysfun {
     my $sysret;
     system(@_);
+    $sysret = "$?" / 256;
     if ($? == -1) {
-	print "failed to execute: $!\n";
+	print "pmake: *** [Makefile: : $key] Error $?\n";
     }
     elsif ($? & 127) {
-    printf "child died with signal %d, %s coredump\n",
-    ($? & 127),  ($? & 128) ? 'with' : 'without';
+        print "pmake: *** [Makefile: : $key] Error $sysret\n";
     }
     else {
-	printf "child exited with value %d\n", $? >> 8;
+        print "pmake: *** [Makefile: : $key] Error $sysret\n";
     }
-    #print "\nwhat it this : $sysret\n": 0;
 }
 sub bashLoop {
-    my $callky;
     #print "@_";
-    $callky = "@_";
+    $key = "@_";
     resetCount();
     my $bashout;
-    $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
-    while ($bashout){
-        if ($bashout =~ /^@\s\S+/){
-            parseAt ( "$bashout" );
-        }elsif ($bashout =~ /^gcc\s\S+/){
-            parseGCC ( "$bashout" );
-        }else {
-            print ("$bashout\n");
-            sysfun ( "$bashout" );
+    $bashout = $lineHash{"$key"}{"rec"}{"$countR"};
+    if ($bashout){ 
+        while ($bashout){
+            if ($bashout =~ /^@\s\S+/){
+                parseAt ( "$bashout" );
+            }elsif ($bashout =~ /^gcc\s\S+/){
+                return parseGCC ( "$bashout" );
+            }else {
+                print ("$bashout\n");
+                sysfun ( "$bashout" );
+            }
+            #print "$bashout\n";
+            $countR ++;
+            $bashout = $lineHash{"$key"}{"rec"}{"$countR"};
         }
-        #print "$bashout\n";
-        $countT ++;
-        $bashout = $lineHash{"$callky"}{"rec"}{"$countT"};
+    }else {
+        my $macs;
+        $key = $lineHash{"$key"}{"tar"}{0};
+        $macs = bashLoop ("$key");
+        if ($macs){
+            print "pmake: Nothing to be done for '$key'.\n";
+        } 
+	0;
     }
 }
 sub resetCount{
