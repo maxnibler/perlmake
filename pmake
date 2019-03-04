@@ -5,11 +5,19 @@ use strict;
 use warnings;
 
 my %lineHash;
-my $countT;
+our $count;
+our $countT;
 my $countR;
 my $key;
 my @keyArr;
-
+my $j;
+our $targ;
+our $sysret;
+our $deps;
+our $depname;
+our @splitLine;
+our $macs;
+our $bashout;
 #read in the Makefile
 resetCount();
 open(DATA, "<Makefile") or die "Couldn't open file Makefile, $!";
@@ -21,18 +29,45 @@ while(<DATA>) {
     parseLine ($line);
 }
 #system( "$ARGV[0]" );
-my $i = 0;
-my $temp;
+our $i = 0;
+our $temp;
 while ($ARGV[$i]){
     #print "looped";
     $temp = "$ARGV[$i]";
-    bashLoop("$temp");
+    if (callMacro("$temp")){
+        print "pmake: '$key' is up to date.\n"
+    }
     $i ++;
+    resetCount();
 }
 if ($i == 0){
     $key = $keyArr[0];
-    if (bashLoop("$key")){
+    #print "this is the source";
+    if (callMacro("$key")){
         print "pmake: '$key' is up to date.\n"
+    }
+}
+sub callMacro{
+    local $macs = "@_";
+    my %targets = map { $_ => 1 } @keyArr;
+    local $count = 0;
+    local $temp = $lineHash{"$macs"}{"tar"}{"$count"};
+    #print "Fresh call $macs\n";
+    while($temp){
+        $count ++;
+        #print "start targ $macs temp $temp $count\n";
+        if (exists($targets{"$temp"})){
+            #print "hoorah $temp\n";
+            callMacro($temp);
+        }
+        #print "test loop $temp $count\n";
+        #$countT ++;                                                                                                               
+        $temp = $lineHash{"$macs"}{"tar"}{"$count"};
+        #print "test $targ $temp $countT\n";                      
+    }
+    if ($lineHash{$macs}{"rec"}{0}){
+        #print "this is $macs\n";
+        return bashLoop ("$macs");
     }
 }
 sub fileTime {
@@ -40,7 +75,7 @@ sub fileTime {
     if (@filestat) {
         #print "@_ ";
         my $mtime = $filestat[9];
-        #print "$mtime ";
+        #print "$mtime \n";
         return $mtime;
     }
     #print "no file";
@@ -54,51 +89,99 @@ sub parseAt{
     sysfun ( "$temp" );
 }
 sub parseGCC {
-    my $targ;
-    my $deps;
-    my $depname;
-    my @splitLine;
+    local $targ;
+    local $deps;
+    local $depname;
+    local @splitLine;
+    local $macs = "@_";
     @splitLine = split ( / / , "@_" );
     $targ = "$lineHash{$key}{tar}{0}";
-    $targ = fileTime ("$targ");
     $depname = $splitLine[-1];
+    if ($macs =~ m/-c/){
+	$targ = "$depname";
+        $depname = "$key";
+    }
+    $targ = fileTime ("$targ");
     $deps = fileTime ("$depname");
-    if ( $deps < $targ ){
+    #print "$deps $targ @_\n";
+    if ( $deps < $targ ){                                                                                       
         print "@_\n";
-        sysfun ("@_");
-        return 0;
+        return sysfun ("@_");
+        
+    }elsif ($deps == 0 or $targ == 0){
+        print "@_\n";
+        return sysfun ("@_");
+      
+    }elsif ($deps > $targ){
+	return 1;
     }else {
         #print "$deps $targ @_\n";
         #print "pmake: '$depname' is up to date.\n";
-        return 1;
+        #print "@_\n";
+        return sysfun ("@_");
+	#return 
     }
 }
 sub sysfun {
-    my $sysret;
+    local $sysret;
     system(@_);
     $sysret = "$?" / 256;
     if ($? == -1) {
 	print "pmake: *** [Makefile: : $key] Error $?\n";
+        return 1;
     }
     elsif ($? & 127) {
         print "pmake: *** [Makefile: : $key] Error $sysret\n";
+        return 1;
+    }
+    elsif ($? == 0) {
+        #print "no problems";
+        return 0;
+        #print "pmake: *** [Makefile: : $key] Error $sysret\n";
     }
     else {
-        print "pmake: *** [Makefile: : $key] Error $sysret\n";
-    }
+        return 1;
+    } 
 }
+sub parseHyphen {
+    local $temp = "@_";
+    $temp =~ m/-/;
+    $temp = "$'";
+    $temp =~ s/^\s+|\s+$//g;
+    local $sysret = "$?" / 256;
+    print "$temp\n";
+    system ("$temp");
+    if ($? == -1) {
+        print "pmake: *** [Makefile: : $key] Error $? (ignored)\n";
+    }
+    elsif ($? & 127) {
+        print "pmake: *** [Makefile: : $key] Error $sysret (ignored)\n";
+    }
+    else {
+        print "pmake: *** [Makefile: : $key] Error $sysret (ignored)\n";
+    }
+    return 0;
+}
+
 sub bashLoop {
-    #print "@_";
+    #print "Key call: @_\n";
     $key = "@_";
     resetCount();
-    my $bashout;
+    local $bashout;
+    local $macs;
+    local $temp;
     $bashout = $lineHash{"$key"}{"rec"}{"$countR"};
+    #print "this $bashout \n";
     if ($bashout){ 
         while ($bashout){
             if ($bashout =~ /^@\s\S+/){
                 parseAt ( "$bashout" );
             }elsif ($bashout =~ /^gcc\s\S+/){
-                return parseGCC ( "$bashout" );
+                $macs = parseGCC ( "$bashout" );
+                #print "$macs";
+                return $macs;
+            }elsif ($bashout =~ /^-\s\S+/){
+                return parseHyphen("$bashout");
             }else {
                 print ("$bashout\n");
                 sysfun ( "$bashout" );
@@ -107,12 +190,13 @@ sub bashLoop {
             $countR ++;
             $bashout = $lineHash{"$key"}{"rec"}{"$countR"};
         }
-    }else {
-        my $macs;
+    }elsif ($key){
+        $temp = $key;
         $key = $lineHash{"$key"}{"tar"}{0};
+        #print "why would this get called";
         $macs = bashLoop ("$key");
         if ($macs){
-            print "pmake: Nothing to be done for '$key'.\n";
+            print "pmake: Nothing to be done for '$temp'.\n";
         } 
 	0;
     }
@@ -137,13 +221,20 @@ sub extMacro {
     return $mac;
 }
 sub extTargets{
+    local $countT = 0;
     my $tarLine;
     my $inpline = "@_";
     $tarLine = $inpline =~ m/:/? "$'" : "error";
     $tarLine =~ s/^\s+|\s+$//g;
-    #print "$tarLine\n";
-    $lineHash{"$key"}{"tar"}{"$countT"} = "$tarLine";
-    $countT ++;
+    local @splitLine = split ( / / , $tarLine );
+    $tarLine = $splitLine[$countT];
+    while ($tarLine){
+        #print "$key $countT $tarLine\n";
+        $lineHash{"$key"}{"tar"}{"$countT"} = "$tarLine";
+        $countT ++;
+        $tarLine = $splitLine[$countT];
+    }
+    #print " finished \n";
 }
 sub storeRecipe{
     my $recipeLine;
