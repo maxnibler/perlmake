@@ -1,33 +1,34 @@
-# $Id: Makefile,v 1.2 2015-11-03 13:44:07-08 - - $
+# $Id: Makefile,v 1.1 2011-03-24 17:23:13-07 - - $
 
-MKFILE   = Makefile
-CCOPTS   = -g -O0 -Wall -Wextra
-SOURCES  = main.c hello.c
-HEADERS  = hello.h
-OBJECTS  = main.o hello.o
-CHECKIN  = ${MKFILE} ${SOURCES} ${HEADERS}
-EXECBIN  = hello
+MKFILE     = Makefile
+JAVASRC    = queue.java qtest.java
+CLASSES    = queue.class qtest.class
+JARCLASSES = ${CLASSES} queue\$$emptyexn.class queue\$$node.class
+JARFILE    = qtest
+MAINCLASS  = qtest
+SOURCES    = ${JAVASRC} ${MKFILE}
 
-all : ${EXECBIN}
+all : ${JARFILE}
 
-${EXECBIN} : ${OBJECTS}
-	cc ${CCOPTS} ${OBJECTS} -o ${EXECBIN}
+${JARFILE} : ${CLASSES}
+	echo Main-class: ${MAINCLASS} >Manifest
+	jar cvfm ${JARFILE} Manifest ${JARCLASSES}
+	chmod +x ${JARFILE}
+	- rm Manifest
 
-%.o : %.c
-	cc ${CCOPTS} -c $<
+%.class : %.java
+	cid + $<
+	javac $<
 
-ci : ${CHECKIN}
-	cid + ${CHECKIN}
-
-test : ${EXECBIN}
-	./${EXECBIN} ; echo status = $$?
-
-clean : 
-	- rm ${OBJECTS}
+clean :
+	- rm ${JARCLASSES}
 
 spotless : clean
-	- rm ${EXECBIN}
+	- rm ${JARFILE}
 
-hello.o: hello.c hello.h
-main.o: main.c hello.h
+ci : ${SOURCES}
+	cid + ${SOURCES}
+
+test : ${JARFILE}
+	./${JARFILE} * | cat -n
 

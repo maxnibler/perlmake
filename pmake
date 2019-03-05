@@ -44,10 +44,10 @@ while ($ARGV[$i]){
     resetCount();
 }
 if ($i == 0){
-    $key = $keyArr[0];
+    local $temp = $keyArr[0];
     #print "this is the source";
-    if (callMacro("$key")){
-        print "pmake: '$key' is up to date.\n"
+    if (callMacro("$temp")){
+        print "pmake: Nothing to be done for '$temp'.\n"
     }
 }
 sub wildCard {
@@ -60,6 +60,26 @@ sub wildCard {
 	    $targ = "$'";
 	    $macs = $keyArr[$count];
 	    $count++;
+            local $i = 0;
+            local $countT = 0;
+            local $deps = $keyArr[$i];
+            local $depname;
+	 #   print "Testing 1 2 3: \n";
+            while ($i < $count){
+                while ($depname){
+	#	    print "$depname == $targ\n";
+		    if ($depname =~ /$targ/){
+	#		print "hello world $#keyArr $keyArr[$#keyArr]\n";
+	                $keyArr[$#keyArr + 1] = $depname;
+	            }
+		    $countT++;
+		    $depname = $lineHash{$deps}{"tar"}{$countT};
+		}
+		$countT = 0;
+		$i++;
+		$deps = $keyArr[$i];
+		$depname = $lineHash{$deps}{"tar"}{$countT};
+	    }
 	}
 	if ($targ){
 	    $macs =~ m/\Q$targ/? wildParse("$macs", '%'."$targ") : 0;
@@ -85,6 +105,7 @@ sub wildParse {
     }
 }
 sub callMacro{
+    local $sysret;
     local $macs = "@_";
     my %targets = map { $_ => 1 } @keyArr;
     local $count = 0;
@@ -95,7 +116,7 @@ sub callMacro{
         #print "start targ $macs temp $temp $count\n";
         if (exists($targets{"$temp"})){
             #print "hoorah $temp\n";
-            callMacro($temp);
+            $sysret = callMacro($temp);
         }
         #print "test loop $temp $count\n";
         #$countT ++;                                                                                                               
@@ -104,8 +125,9 @@ sub callMacro{
     }
     if ($lineHash{$macs}{"rec"}{0}){
         #print "this is $macs\n";
-        return bashLoop ("$macs");
+        $sysret = bashLoop ("$macs");
     }
+    return $sysret;
 }
 sub fileTime {
     my @filestat = stat "@_";
@@ -153,9 +175,9 @@ sub parseGCC {
 	return 1;
     }else {
         #print "$deps $targ @_\n";
-        #print "pmake: '$depname' is up to date.\n";
+        #print "pmake: Nothing to be done for '$depname'.\n";
         #print "@_\n";
-        return sysfun ("@_");
+        return 1;
 	#return 
     }
 }
@@ -165,11 +187,11 @@ sub sysfun {
     $sysret = "$?" / 256;
     if ($? == -1) {
 	print "pmake: *** [Makefile: : $key] Error $?\n";
-        return 1;
+        exit;
     }
     elsif ($? & 127) {
         print "pmake: *** [Makefile: : $key] Error $sysret\n";
-        return 1;
+        exit;
     }
     elsif ($? == 0) {
         #print "no problems";
@@ -194,7 +216,9 @@ sub parseHyphen {
     elsif ($? & 127) {
         print "pmake: *** [Makefile: : $key] Error $sysret (ignored)\n";
     }
-    else {
+    elsif ($? == 0){
+	
+    }else{
         print "pmake: *** [Makefile: : $key] Error $sysret (ignored)\n";
     }
     return 0;
